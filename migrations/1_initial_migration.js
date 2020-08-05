@@ -4,12 +4,12 @@ const IdentityRegistry = artifacts.require('./_testing/IdentityRegistry.sol')
 const PhoenixToken = artifacts.require('./_testing/PhoenixToken.sol')
 
 const SafeMath = artifacts.require('./zeppelin/math/SafeMath.sol')
-const Snowflake = artifacts.require('./_testing/Snowflake.sol')
+const PhoenixIdentity = artifacts.require('./_testing/PhoenixIdentity.sol')
 // const Status = artifacts.require('./resolvers/Status.sol')
 
-const StringUtils = artifacts.require('./_testing/resolvers/ClientRaindrop/StringUtils.sol')
-const ClientRaindrop = artifacts.require('./_testing/resolvers/ClientRaindrop/ClientRaindrop.sol')
-const OldClientRaindrop = artifacts.require('./_testing/OldClientRaindrop.sol')
+const StringUtils = artifacts.require('./_testing/resolvers/ClientPhoenixAuthentication/StringUtils.sol')
+const ClientPhoenixAuthentication = artifacts.require('./_testing/resolvers/ClientPhoenixAuthentication/ClientPhoenixAuthentication.sol')
+const OldClientPhoenixAuthentication = artifacts.require('./_testing/OldClientPhoenixAuthentication.sol')
 
 module.exports = async function (deployer) {
   await deployer.deploy(AddressSet)
@@ -17,16 +17,16 @@ module.exports = async function (deployer) {
 
   await deployer.deploy(SafeMath)
   deployer.link(SafeMath, PhoenixToken)
-  deployer.link(SafeMath, Snowflake)
+  deployer.link(SafeMath, PhoenixIdentity)
 
   await deployer.deploy(StringUtils)
-  deployer.link(StringUtils, ClientRaindrop)
-  deployer.link(StringUtils, OldClientRaindrop)
+  deployer.link(StringUtils, ClientPhoenixAuthentication)
+  deployer.link(StringUtils, OldClientPhoenixAuthentication)
 
   // const identityRegistry = await deployer.deploy(IdentityRegistry)
   // const phoenixToken = await deployer.deploy(PhoenixToken)
-  // const snowflake = await deployer.deploy(Snowflake, identityRegistry.address, phoenixToken.address)
-  // const oldClientRaindrop = await deployer.deploy(OldClientRaindrop)
-  // await deployer.deploy(ClientRaindrop, snowflake.address, oldClientRaindrop.address, 0, 0)
-  // await deployer.deploy(Status, snowflake.address)
+  // const phoenixIdentity = await deployer.deploy(PhoenixIdentity, identityRegistry.address, phoenixToken.address)
+  // const oldClientPhoenixAuthentication = await deployer.deploy(OldClientPhoenixAuthentication)
+  // await deployer.deploy(ClientPhoenixAuthentication, phoenixIdentity.address, oldClientPhoenixAuthentication.address, 0, 0)
+  // await deployer.deploy(Status, phoenixIdentity.address)
 }

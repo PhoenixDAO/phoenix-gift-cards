@@ -1,10 +1,10 @@
 pragma solidity ^0.5.0;
 
-interface ClientRaindropInterface {
+interface ClientPhoenixAuthenticationInterface {
     function phoenixStakeUser() external returns (uint);
     function phoenixStakeDelegatedUser() external returns (uint);
 
-    function setSnowflakeAddress(address _snowflakeAddress) external;
+    function setPhoenixIdentityAddress(address _phoenixIdentityAddress) external;
     function setStakes(uint _phoenixStakeUser, uint _phoenixStakeDelegatedUser) external;
 
     function signUp(address _address, string calldata casedPhoenixId) external;

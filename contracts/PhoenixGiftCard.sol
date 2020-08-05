@@ -1,12 +1,12 @@
-pragma solidity 0.5.0;
+pragma solidity ^0.5.0;
 
 import "./SignatureVerifier.sol";
-import "./SnowflakeResolver.sol";
+import "./PhoenixIdentityResolver.sol";
 
-import "./interfaces/ClientRaindropInterface.sol";
+import "./interfaces/ClientPhoenixAuthenticationInterface.sol";
 import "./interfaces/PhoenixInterface.sol";
 import "./interfaces/IdentityRegistryInterface.sol";
-import "./interfaces/SnowflakeInterface.sol";
+import "./interfaces/PhoenixIdentityInterface.sol";
 
 import "./zeppelin/math/SafeMath.sol";
 
@@ -16,18 +16,18 @@ interface giftCardRedeemer {
 }
 
 
-contract PhoenixGiftCard is SnowflakeResolver, SignatureVerifier {
+contract PhoenixGiftCard is PhoenixIdentityResolver, SignatureVerifier {
     using SafeMath for uint;
 
     // SC variables
-    SnowflakeInterface private snowflake;
+    PhoenixIdentityInterface private phoenixIdentity;
 
     /* address public identityRegistryAddress; */
     IdentityRegistryInterface private identityRegistry;
     /* address public phoenixTokenAddress; */
     PhoenixInterface private phoenixToken;
-    /* address public clientRaindropAddress; */
-    ClientRaindropInterface private clientRaindrop;
+    /* address public clientPhoenixAuthenticationAddress; */
+    ClientPhoenixAuthenticationInterface private clientPhoenixAuthentication;
 
     struct Offer {
       uint[] amounts;   // Available gift card denominations
@@ -64,28 +64,28 @@ contract PhoenixGiftCard is SnowflakeResolver, SignatureVerifier {
         _;
     }
 
-    constructor (address _snowflakeAddress) SnowflakeResolver(
+    constructor (address _phoenixIdentityAddress) PhoenixIdentityResolver(
         "PhoenixGiftCard",
-        "Snowflake-powered PHNX gift cards",
-        _snowflakeAddress,
+        "PhoenixIdentity-powered PHNX gift cards",
+        _phoenixIdentityAddress,
         false,   // _callOnAddition
         false     // _callOnRemoval
     ) public {
-      setSnowflakeAddress(_snowflakeAddress);
+      setPhoenixIdentityAddress(_phoenixIdentityAddress);
     }
 
-    function setSnowflakeAddress(address _snowflakeAddress) public onlyOwner {
-        snowflakeAddress = _snowflakeAddress;
-        snowflake = SnowflakeInterface(snowflakeAddress);
-        identityRegistry = IdentityRegistryInterface(snowflake.identityRegistryAddress());
-        phoenixToken = PhoenixInterface(snowflake.phoenixTokenAddress());
-        clientRaindrop = ClientRaindropInterface(snowflake.clientRaindropAddress());
+    function setPhoenixIdentityAddress(address _phoenixIdentityAddress) public onlyOwner {
+        phoenixIdentityAddress = _phoenixIdentityAddress;
+        phoenixIdentity = PhoenixIdentityInterface(phoenixIdentityAddress);
+        identityRegistry = IdentityRegistryInterface(phoenixIdentity.identityRegistryAddress());
+        phoenixToken = PhoenixInterface(phoenixIdentity.phoenixTokenAddress());
+        clientPhoenixAuthentication = ClientPhoenixAuthenticationInterface(phoenixIdentity.clientPhoenixAuthenticationAddress());
         maxGiftCardId = 1000;
     }
 
-    function onAddition(uint ein, uint allowance, bytes memory) public senderIsSnowflake() returns (bool) {}
-    function onRemoval(uint ein, bytes memory) public senderIsSnowflake() returns (bool) {
-      // We don't need to verify the input 'ein' because of the senderIsSnowflake check.
+    function onAddition(uint ein, uint allowance, bytes memory) public senderIsPhoenixIdentity() returns (bool) {}
+    function onRemoval(uint ein, bytes memory) public senderIsPhoenixIdentity() returns (bool) {
+      // We don't need to verify the input 'ein' because of the senderIsPhoenixIdentity check.
 
       // If EIN is associated with vendor Offers, refund all vendor GiftCards
       uint[] memory vendorCards = vendorGiftCardIds[ein];
@@ -123,7 +123,7 @@ contract PhoenixGiftCard is SnowflakeResolver, SignatureVerifier {
       return offers[_vendorEIN].amounts;
     }
 
-    /* Refund PHNX to customer's Snowflake */
+    /* Refund PHNX to customer's PhoenixIdentity */
     function refund(uint _giftCardId) private {
       GiftCard storage giftCard = giftCardsById[_giftCardId];
       require(giftCard.id != 0, "Invalid giftCardId");
@@ -136,13 +136,13 @@ contract PhoenixGiftCard is SnowflakeResolver, SignatureVerifier {
       // Zero out the gift card
       giftCard.balance = 0;
 
-      // Refund balance back into customer's snowflake
+      // Refund balance back into customer's phoenixIdentity
       transferPhoenixBalanceTo(giftCard.customer, _amountToRefund);
 
       emit PhoenixGiftCardRefunded(giftCard.id, giftCard.vendor, giftCard.customer, _amountToRefund);
     }
 
-    /* Refund PHNX to customer's Snowflake */
+    /* Refund PHNX to customer's PhoenixIdentity */
     function refundGiftCard(uint _giftCardId) public {
       GiftCard storage giftCard = giftCardsById[_giftCardId];
       require(giftCard.id != 0, "Invalid giftCardId");
@@ -165,7 +165,7 @@ contract PhoenixGiftCard is SnowflakeResolver, SignatureVerifier {
       require(identityRegistry.identityExists(_vendorEIN), "The recipient EIN does not exist.");
       uint _buyerEIN = identityRegistry.getEIN(msg.sender);   // throws error if address not associated with an EIN
 
-      // Has the buyer added this resolver to their snowflake?
+      // Has the buyer added this resolver to their phoenixIdentity?
       require(identityRegistry.isResolverFor(_buyerEIN, address(this)), "The EIN has not set this resolver");
 
       // Does this vendor have any offers?
@@ -183,7 +183,7 @@ contract PhoenixGiftCard is SnowflakeResolver, SignatureVerifier {
       require(offerFound, "Vendor does not offer this denomination");
 
       // Transfer the PHNX funds into the contract first...
-      snowflake.withdrawSnowflakeBalanceFrom(_buyerEIN, address(this), _value);
+      phoenixIdentity.withdrawPhoenixIdentityBalanceFrom(_buyerEIN, address(this), _value);
 
       // ...then add to the ledger
       maxGiftCardId += 1;
@@ -210,9 +210,9 @@ contract PhoenixGiftCard is SnowflakeResolver, SignatureVerifier {
       identityRegistry.getIdentity(_recipientEIN);     // throws error if unknown EIN
 
       // Many addresses might be associated with the customer's EIN, but redemption
-      //  must be signed by the address associated with the customer's ClientRaindrop
-      (address _buyerAddress, string memory buyerCasedPhoenixID) = clientRaindrop.getDetails(giftCard.customer);
-      require(msg.sender == _buyerAddress, "Transfer was not approved from the clientRaindrop address");
+      //  must be signed by the address associated with the customer's ClientPhoenixAuthentication
+      (address _buyerAddress, string memory buyerCasedPhoenixID) = clientPhoenixAuthentication.getDetails(giftCard.customer);
+      require(msg.sender == _buyerAddress, "Transfer was not approved from the clientPhoenixAuthentication address");
 
       // Transfer must be signed by the customer
       require(
@@ -260,7 +260,7 @@ contract PhoenixGiftCard is SnowflakeResolver, SignatureVerifier {
     /***************************************************************************
     *   Redeem functions
     ***************************************************************************/
-    /* Gift cards can only be redeemed by the holder's Raindrop address */
+    /* Gift cards can only be redeemed by the holder's PhoenixAuthentication address */
     function redeem(
         uint _giftCardId, uint _amount, uint _timestamp,
         uint8 v, bytes32 r, bytes32 s
@@ -276,9 +276,9 @@ contract PhoenixGiftCard is SnowflakeResolver, SignatureVerifier {
       require(giftCard.balance >= _amount, "Can't redeem more than gift card's balance");
 
       // Many addresses might be associated with the customer's EIN, but redemption
-      //  must be signed by the address associated with the customer's ClientRaindrop
-      (address _customerAddress, string memory customerCasedPhoenixID) = clientRaindrop.getDetails(giftCard.customer);
-      require(msg.sender == _customerAddress, "Redeem was not approved from the clientRaindrop address");
+      //  must be signed by the address associated with the customer's ClientPhoenixAuthentication
+      (address _customerAddress, string memory customerCasedPhoenixID) = clientPhoenixAuthentication.getDetails(giftCard.customer);
+      require(msg.sender == _customerAddress, "Redeem was not approved from the clientPhoenixAuthentication address");
 
       // Redemption must be signed by the customer
       require(
@@ -332,7 +332,7 @@ contract PhoenixGiftCard is SnowflakeResolver, SignatureVerifier {
       // Update the GiftCard's allowance accounting...
       giftCard.vendorRedeemAllowed = giftCard.vendorRedeemAllowed.sub(_amount);
 
-      // ...and only now do we do the transfer, and only to the vendor's snowflake
+      // ...and only now do we do the transfer, and only to the vendor's PhoenixIdentity
       transferPhoenixBalanceTo(giftCard.vendor, _amount);
 
       emit PhoenixGiftCardVendorRedeemed(_giftCardId, giftCard.vendor, giftCard.customer, _amount);
@@ -354,8 +354,8 @@ contract PhoenixGiftCard is SnowflakeResolver, SignatureVerifier {
     ) {
       GiftCard memory _giftCard = giftCardsById[_id];
 
-      (address _vendorAddress, string memory _vendorCasedPhoenixID) = clientRaindrop.getDetails(_giftCard.vendor);
-      (address _customerAddress, string memory _customerCasedPhoenixID) = clientRaindrop.getDetails(_giftCard.customer);
+      (address _vendorAddress, string memory _vendorCasedPhoenixID) = clientPhoenixAuthentication.getDetails(_giftCard.vendor);
+      (address _customerAddress, string memory _customerCasedPhoenixID) = clientPhoenixAuthentication.getDetails(_giftCard.customer);
       return (_vendorCasedPhoenixID, _customerCasedPhoenixID,  _giftCard.balance);
     }
 

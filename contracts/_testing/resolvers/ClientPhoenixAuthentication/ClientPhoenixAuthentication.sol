@@ -1,13 +1,13 @@
 pragma solidity ^0.5.0;
 
 import "./StringUtils.sol";
-import "./OldClientRaindropInterface.sol";
-import "../../../SnowflakeResolver.sol";
+import "./OldClientPhoenixAuthenticationInterface.sol";
+import "../../../PhoenixIdentityResolver.sol";
 import "../../../interfaces/PhoenixInterface.sol";
 import "../../../interfaces/IdentityRegistryInterface.sol";
-import "../../../interfaces/SnowflakeInterface.sol";
+import "../../../interfaces/PhoenixIdentityInterface.sol";
 
-contract ClientRaindrop is SnowflakeResolver {
+contract ClientPhoenixAuthentication is PhoenixIdentityResolver {
     // attach the StringUtils library
     using StringUtils for string;
     using StringUtils for StringUtils.slice;
@@ -15,7 +15,7 @@ contract ClientRaindrop is SnowflakeResolver {
     // other SCs
     PhoenixInterface private phoenixToken;
     IdentityRegistryInterface private identityRegistry;
-    OldClientRaindropInterface private oldClientRaindrop;
+    OldClientPhoenixAuthenticationInterface private oldClientPhoenixAuthentication;
 
     // staking requirements
     uint public phoenixStakeUser;
@@ -38,17 +38,17 @@ contract ClientRaindrop is SnowflakeResolver {
     mapping (address => bytes32) private addressDirectory;
 
     constructor(
-        address snowflakeAddress, address oldClientRaindropAddress, uint _phoenixStakeUser, uint _phoenixStakeDelegatedUser
+        address phoenixIdentityAddress, address oldClientPhoenixAuthenticationAddress, uint _phoenixStakeUser, uint _phoenixStakeDelegatedUser
     )
-        SnowflakeResolver(
-            "Client Raindrop", "A registry that links EINs to PhoenixIDs to power Client Raindrop MFA.",
-            snowflakeAddress,
+        PhoenixIdentityResolver(
+            "Client PhoenixAuthentication", "A registry that links EINs to PhoenixIDs to power Client PhoenixAuthentication MFA.",
+            phoenixIdentityAddress,
             true, true
         )
         public
     {
-        setSnowflakeAddress(snowflakeAddress);
-        setOldClientRaindropAddress(oldClientRaindropAddress);
+        setPhoenixIdentityAddress(phoenixIdentityAddress);
+        setOldClientPhoenixAuthenticationAddress(oldClientPhoenixAuthenticationAddress);
         setStakes(_phoenixStakeUser, _phoenixStakeDelegatedUser);
     }
 
@@ -58,18 +58,18 @@ contract ClientRaindrop is SnowflakeResolver {
         _;
     }
 
-    // set the snowflake address, and phoenix token + identity registry contract wrappers
-    function setSnowflakeAddress(address snowflakeAddress) public onlyOwner() {
-        super.setSnowflakeAddress(snowflakeAddress);
+    // set the phoenixIdentity address, and phoenix token + identity registry contract wrappers
+    function setPhoenixIdentityAddress(address phoenixIdentityAddress) public onlyOwner() {
+        super.setPhoenixIdentityAddress(phoenixIdentityAddress);
 
-        SnowflakeInterface snowflake = SnowflakeInterface(snowflakeAddress);
-        phoenixToken = PhoenixInterface(snowflake.phoenixTokenAddress());
-        identityRegistry = IdentityRegistryInterface(snowflake.identityRegistryAddress());
+        PhoenixIdentityInterface phoenixIdentity = PhoenixIdentityInterface(phoenixIdentityAddress);
+        phoenixToken = PhoenixInterface(phoenixIdentity.phoenixTokenAddress());
+        identityRegistry = IdentityRegistryInterface(phoenixIdentity.identityRegistryAddress());
     }
 
-    // set the old client raindrop address
-    function setOldClientRaindropAddress(address oldClientRaindropAddress) public onlyOwner() {
-        oldClientRaindrop = OldClientRaindropInterface(oldClientRaindropAddress);
+    // set the old client phoenixAuthentication address
+    function setOldClientPhoenixAuthenticationAddress(address oldClientPhoenixAuthenticationAddress) public onlyOwner() {
+        oldClientPhoenixAuthentication = OldClientPhoenixAuthenticationInterface(oldClientPhoenixAuthenticationAddress);
     }
 
     // set minimum phoenix balances required for sign ups
@@ -88,13 +88,13 @@ contract ClientRaindrop is SnowflakeResolver {
         _signUp(identityRegistry.getEIN(msg.sender), casedPhoenixId, _address);
     }
 
-    // function for users signing up through the snowflake provider
+    // function for users signing up through the phoenixIdentity provider
     function onAddition(uint ein, uint, bytes memory extraData)
         // solium-disable-next-line security/no-tx-origin
-        public senderIsSnowflake() requireStake(tx.origin, phoenixStakeDelegatedUser) returns (bool)
+        public senderIsPhoenixIdentity() requireStake(tx.origin, phoenixStakeDelegatedUser) returns (bool)
     {
         (address _address, string memory casedPhoenixID) = abi.decode(extraData, (address, string));
-        require(identityRegistry.isProviderFor(ein, msg.sender), "Snowflake is not a Provider for the passed EIN.");
+        require(identityRegistry.isProviderFor(ein, msg.sender), "PhoenixIdentity is not a Provider for the passed EIN.");
         _signUp(ein, casedPhoenixID, _address);
 
         return true;
@@ -125,14 +125,14 @@ contract ClientRaindrop is SnowflakeResolver {
     }
 
     function checkForOldPhoenixID(string memory casedPhoenixID, address _address) public view {
-        bool usernameTaken = oldClientRaindrop.userNameTaken(casedPhoenixID);
+        bool usernameTaken = oldClientPhoenixAuthentication.userNameTaken(casedPhoenixID);
         if (usernameTaken) {
-            (, address takenAddress) = oldClientRaindrop.getUserByName(casedPhoenixID);
+            (, address takenAddress) = oldClientPhoenixAuthentication.getUserByName(casedPhoenixID);
             require(_address == takenAddress, "This Phoenix ID is already claimed by another address.");
         }
     }
 
-    function onRemoval(uint ein, bytes memory) public senderIsSnowflake() returns (bool) {
+    function onRemoval(uint ein, bytes memory) public senderIsPhoenixIdentity() returns (bool) {
         bytes32 uncasedPhoenixIDHash = einDirectory[ein];
         assert(uncasedPhoenixIDHashActive(uncasedPhoenixIDHash));
 
@@ -207,7 +207,7 @@ contract ClientRaindrop is SnowflakeResolver {
         return userDirectory[uncasedPhoenixIDHash];
     }
 
-    // Events for when a user signs up for Raindrop Client and when their account is deleted
+    // Events for when a user signs up for PhoenixAuthentication Client and when their account is deleted
     event PhoenixIDClaimed(uint indexed ein, string phoenixID, address userAddress);
     event PhoenixIDDestroyed(uint indexed ein, string phoenixID, address userAddress);
 }

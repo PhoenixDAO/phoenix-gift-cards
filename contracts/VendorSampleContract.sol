@@ -1,6 +1,6 @@
-pragma solidity 0.5.0;
+pragma solidity ^0.5.0;
 
-import "./interfaces/ClientRaindropInterface.sol";
+import "./interfaces/ClientPhoenixAuthenticationInterface.sol";
 import "./zeppelin/ownership/Ownable.sol";
 
 interface PhoenixGiftCardInterface {
@@ -13,12 +13,12 @@ interface PhoenixGiftCardInterface {
 }
 
 contract VendorSampleContract is Ownable {
-  address public clientRaindropAddress;
-  ClientRaindropInterface private clientRaindrop;
+  address public clientPhoenixAuthenticationAddress;
+  ClientPhoenixAuthenticationInterface private clientPhoenixAuthentication;
 
-  function setAddresses(address _clientRaindropAddress) public onlyOwner {
-      clientRaindropAddress = _clientRaindropAddress;
-      clientRaindrop = ClientRaindropInterface(clientRaindropAddress);
+  function setAddresses(address _clientPhoenixAuthenticationAddress) public onlyOwner {
+      clientPhoenixAuthenticationAddress = _clientPhoenixAuthenticationAddress;
+      clientPhoenixAuthentication = ClientPhoenixAuthenticationInterface(clientPhoenixAuthenticationAddress);
   }
 
   function receiveRedeemApproval(
@@ -36,8 +36,8 @@ contract VendorSampleContract is Ownable {
     PhoenixGiftCardInterface phoenixGiftCard = PhoenixGiftCardInterface(_giftCardContract);
     (string memory vendorCasedPhoenixID, string memory customerCasedPhoenixID, uint balance) = phoenixGiftCard.getGiftCard(_giftCardId);
 
-    // Get the customer's EIN via ClientRaindrop
-    (uint customerEIN, address customerAddress, string memory _customerCasedPhoenixID) = clientRaindrop.getDetails(customerCasedPhoenixID);
+    // Get the customer's EIN via ClientPhoenixAuthentication
+    (uint customerEIN, address customerAddress, string memory _customerCasedPhoenixID) = clientPhoenixAuthentication.getDetails(customerCasedPhoenixID);
 
     // Tell the PhoenixGiftCard to transfer the PHNX funds
     phoenixGiftCard.vendorRedeem(_giftCardId, _value);

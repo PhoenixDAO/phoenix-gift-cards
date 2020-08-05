@@ -1,7 +1,7 @@
 # PhoenixGiftCard
 
 ## Overview
-`PhoenixGiftCard` is implemented as a Snowflake Resolver which uses the Resolver's allowance system to facilitate easier PHNX token exchanges. The customer must deposit PHNX into their snowflake and would then add `PhoenixGiftCard` as a resolver for their snowflake and allocate a sufficient allowance which they'll use to purchase `GiftCards`.
+`PhoenixGiftCard` is implemented as a PhoenixIdentity Resolver which uses the Resolver's allowance system to facilitate easier PHNX token exchanges. The customer must deposit PHNX into their phoenixIdentity and would then add `PhoenixGiftCard` as a resolver for their phoenixIdentity and allocate a sufficient allowance which they'll use to purchase `GiftCards`.
 
 Vendors will specify `Offers` consisting of the gift card denominations that will be available to purchase (e.g. 100,000 PHNX, 50,000 PHNX, etc.). Vendors must have an identity registered in the Phoenix ecosystem as their `Offers` are tied to their EIN.
 
@@ -19,9 +19,9 @@ struct GiftCard {
 
 The funds are held in escrow in the `PhoenixGiftCard` smart contract until they are either redeemed or refunded.
 
-The typical use case would have the customer then gift the `GiftCard` to another user. The recipient must have an identity and upon transfer would be entered as the new `GiftCard.customer` EIN. This transfer can only be authorized by the current `GiftCard.customer` via a signed permission statement from the customer's ClientRaindrop address.
+The typical use case would have the customer then gift the `GiftCard` to another user. The recipient must have an identity and upon transfer would be entered as the new `GiftCard.customer` EIN. This transfer can only be authorized by the current `GiftCard.customer` via a signed permission statement from the customer's ClientPhoenixAuthentication address.
 
-The recipient can then redeem the `GiftCard` by spending it at the vendor. Redemption also requires a signed permission statement from the recipient's ClientRaindrop address. The authorized funds can only be transferred to the vendor.
+The recipient can then redeem the `GiftCard` by spending it at the vendor. Redemption also requires a signed permission statement from the recipient's ClientPhoenixAuthentication address. The authorized funds can only be transferred to the vendor.
 
 The vendor's side of redeeming a `GiftCard` is demonstrated in the `VendorSampleContract`. Its `receiveRedeemApproval()` function is analagous to ERC-20's `receiveApproval()`. It allows the vendor's smart contract to trigger the funds transfer and then complete whatever business logic it needs to attend to.
 

@@ -1,7 +1,7 @@
 {
   "name": "gift-card",
   "version": "1.0.0",
-  "description": "Phoenix Snowflake gift card",
+  "description": "Phoenix PhoenixIdentity gift card",
   "scripts": {
     "build": "npm run buidl",
     "buidl": "rm -rf build/ && npx truffle compile",
